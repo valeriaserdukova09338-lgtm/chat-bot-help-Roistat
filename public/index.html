@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Roistat AI — Knowledge Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1f2937;--bg4:#243044;
+  --accent:#ff5e3a;--accent2:#ff8c5a;--blue:#4f8cff;
+  --t1:#f0f4ff;--t2:#9aaac8;--t3:#5a6a8a;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --green:#22c55e;
+}
+html,body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--t1);height:100vh;overflow:hidden}
+.app{display:grid;grid-template-columns:260px 1fr;height:100vh}
+
+/* SIDEBAR */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.s-head{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;box-shadow:0 3px 12px rgba(255,94,58,.35);flex-shrink:0}
+.logo-name{font-weight:800;font-size:17px;letter-spacing:-.4px}
+.logo-sub{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;padding-left:44px;margin-top:1px}
+.new-btn{margin:14px 18px 0;padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.2s;width:calc(100% - 36px)}
+.new-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,94,58,.3)}
+.s-sec{padding:14px 18px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);font-weight:700}
+.hist{flex:1;overflow-y:auto;padding:0 10px 12px}
+.hist-item{padding:9px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;font-size:12px;color:var(--t2);transition:.15s;display:flex;align-items:center;gap:8px;overflow:hidden}
+.hist-item:hover{background:var(--bg3);color:var(--t1)}
+.hist-item.active{background:var(--bg3);color:var(--t1);border-left:2px solid var(--accent);padding-left:8px}
+.hist-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-empty{padding:14px 10px;font-size:12px;color:var(--t3);text-align:center;font-style:italic}
+.s-foot{padding:14px 18px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);line-height:1.6}
+.s-foot a{color:var(--blue);text-decoration:none}
+
+/* MAIN */
+.main{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.topbar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:9px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.top-meta{font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace}
+
+/* MESSAGES */
+.msgs{flex:1;overflow-y:auto;padding:28px 0 8px;min-height:0}
+.msgs-inner{max-width:760px;margin:0 auto;padding:0 28px}
+
+.welcome{text-align:center;padding:32px 0 28px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:rgba(255,94,58,.1);border:1px solid rgba(255,94,58,.25);border-radius:20px;font-size:10px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px}
+.welcome h1{font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.15;margin-bottom:10px}
+.welcome h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welcome p{color:var(--t2);font-size:14px;max-width:480px;margin:0 auto 26px;line-height:1.6}
+.cats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:600px;margin:0 auto}
+.cat{padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:left;transition:.2s;font-family:inherit;color:inherit}
+.cat:hover{border-color:var(--accent);background:var(--bg3);transform:translateY(-2px)}
+.cat-icon{font-size:18px;margin-bottom:7px;display:block}
+.cat-t{font-size:12px;font-weight:700;margin-bottom:3px}
+.cat-d{font-size:11px;color:var(--t3);line-height:1.4}
+
+.msg{display:flex;gap:13px;margin-bottom:24px;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.av{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.av.user{background:var(--bg4);color:var(--t1)}
+.av.bot{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 8px rgba(255,94,58,.25)}
+.msg-body{flex:1;min-width:0;padding-top:3px}
+.msg-who{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.msg-text{font-size:14px;line-height:1.65;color:var(--t1);word-wrap:break-word}
+.msg-text p{margin-bottom:9px}.msg-text p:last-child{margin-bottom:0}
+.msg-text a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(255,94,58,.3)}
+.msg-text a:hover{border-bottom-color:var(--accent)}
+.msg-text ul,.msg-text ol{padding-left:20px;margin-bottom:9px}
+.msg-text li{margin-bottom:3px}
+.msg-text code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg3);padding:1px 5px;border-radius:4px;border:1px solid var(--border2)}
+.msg-text pre{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:9px 0}
+.msg-text pre code{background:none;border:none;padding:0;font-size:12px;line-height:1.5}
+.msg-text strong{font-weight:700;color:var(--t1)}
+.msg-text h2{font-size:16px;font-weight:700;margin:14px 0 7px}
+.msg-text h3{font-size:13px;font-weight:700;margin:12px 0 6px}
+
+.typing{display:flex;gap:4px;padding:6px 0}
+.typing span{width:5px;height:5px;background:var(--t3);border-radius:50%;animation:bounce 1.4s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+
+/* INPUT */
+.inp-area{padding:16px 28px 20px;background:linear-gradient(to top,var(--bg) 55%,transparent);flex-shrink:0}
+.inp-wrap{max-width:760px;margin:0 auto}
+.inp-box{display:flex;align-items:flex-end;gap:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:10px;transition:.2s}
+.inp-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,94,58,.12)}
+.inp-box textarea{flex:1;background:none;border:none;outline:none;color:var(--t1);font-family:inherit;font-size:14px;line-height:1.5;resize:none;min-height:22px;max-height:180px;padding:3px 6px}
+.inp-box textarea::placeholder{color:var(--t3)}
+.send{width:34px;height:34px;border-radius:9px;background:var(--accent);border:none;color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
+.send:hover:not(:disabled){transform:scale(1.08);box-shadow:0 4px 12px rgba(255,94,58,.4)}
+.send:disabled{opacity:.35;cursor:not-allowed}
+.inp-hint{font-size:10px;color:var(--t3);text-align:center;margin-top:7px;font-family:'JetBrains Mono',monospace}
+
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+
+@media(max-width:640px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .cats{grid-template-columns:1fr}
+  .msgs-inner{padding:0 16px}
+  .inp-area{padding:12px 16px 16px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="s-head">
+      <div class="logo">
+        <div class="logo-mark">R</div>
+        <div class="logo-name">Roistat AI</div>
+      </div>
+      <div class="logo-sub">Knowledge Assistant</div>
+    </div>
+    <button class="new-btn" onclick="newChat()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Новый диалог
+    </button>
+    <div class="s-sec">История</div>
+    <div class="hist" id="hist"></div>
+    <div class="s-foot">
+      Claude Sonnet 4 · <a href="https://help-ru.roistat.com/" target="_blank">help-ru.roistat.com</a><br>
+      История сохраняется в браузере
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="top-title"><div class="dot"></div><span id="chat-title">Новый диалог</span></div>
+      <div class="top-meta">claude-sonnet-4 · employees only</div>
+    </div>
+    <div class="msgs" id="msgs">
+      <div class="msgs-inner">
+        <div id="welcome-screen" class="welcome">
+          <div class="badge">⚡ Внутренний инструмент Roistat</div>
+          <h1>Привет, коллега 👋<br><span>Чем помочь?</span></h1>
+          <p>Знаю всю документацию help-ru.roistat.com. Помогу найти инструкции, дам готовый ответ клиенту, объясню API или найду нужную интеграцию.</p>
+          <div class="cats" id="cats"></div>
+        </div>
+        <div id="messages-list"></div>
+        <div id="typing-indicator" style="display:none">
+          <div class="msg">
+            <div class="av bot">R</div>
+            <div class="msg-body">
+              <div class="msg-who">Roistat AI</div>
+              <div class="typing"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="inp-area">
+      <div class="inp-wrap">
+        <div class="inp-box">
+          <textarea id="inp" placeholder="Задайте вопрос про Roistat: настройка, интеграции, API, готовый ответ клиенту..." rows="1" onkeydown="onKey(event)" oninput="resize(this)"></textarea>
+          <button class="send" id="send-btn" onclick="sendFromInput()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="inp-hint">Enter — отправить · Shift+Enter — новая строка</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const DOCS_MAP = `
+## НАЧАЛО РАБОТЫ
+- Введение: https://help-ru.roistat.com/
+- Регистрация: https://help-ru.roistat.com/quick-start/signup/
+- Возможности Roistat: https://help-ru.roistat.com/quick-start/Vozmozhnosti_Roistat/
+- Быстрый старт: https://help-ru.roistat.com/quick-start/Bystryj_start/
+- Видеоуроки: https://help-ru.roistat.com/quick-start/Videouroki/
+- FAQ: https://help-ru.roistat.com/faq/FAQ/
+- Поддержка: https://help-ru.roistat.com/quick-start/Podderzhka/Obrashenie_v_sluzhbu_podderzhki/
+- Обращение к менеджеру: https://help-ru.roistat.com/quick-start/Podderzhka/Obrashenie_k_personalnomu_menedzheru/
+- Roistat vs Яндекс.Метрика: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Prochee/Sravnenie_Roistat_i_JAndeks.Metriki/
+- Roistat vs Google Analytics: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Prochee/Sravnenie_Roistat_i_Google_Analytics/
+
+## АНАЛИТИКА
+- Введение: https://help-ru.roistat.com/features/Analitika_i_otchety/Ob_Analitike/
+- Настройка сквозной аналитики: https://help-ru.roistat.com/quick-start/Nastrojka-skvoznoj-analitiki/
+- Построение отчётов: https://help-ru.roistat.com/features/Analitika_i_otchety/Analitika/Postroenie_otchetov/
+- Фильтры: https://help-ru.roistat.com/features/Analitika_i_otchety/Analitika/Filtry/
+- Список сделок: https://help-ru.roistat.com/features/Analitika_i_otchety/Analitika/Spisok_sdelok/
+- Список звонков: https://help-ru.roistat.com/features/Analitika_i_otchety/Analitika/Spisok_zvonkov/
+- Мультиканальная аналитика: https://help-ru.roistat.com/features/Analitika_i_otchety/Multikanalnaja_analitika/
+- Модели атрибуции: https://help-ru.roistat.com/features/Analitika_i_otchety/Analitika/Modeli_atribucii/
+- Товарная аналитика: https://help-ru.roistat.com/features/Tovarnaja_analitika/
+- Дашборд: https://help-ru.roistat.com/features/Analitika_i_otchety/Svodnyi_otchet/
+- Пользовательский дашборд: https://help-ru.roistat.com/features/Analitika_i_otchety/Nastraivaemyi_svodnyi_otchet/
+- Воронка статусов: https://help-ru.roistat.com/features/Analitika_i_otchety/Specialnye_otchety/Voronka_statusov/
+- Неэффективные ключевые слова: https://help-ru.roistat.com/features/Analitika_i_otchety/Specialnye_otchety/Nejeffektivnye_kljuchevye_slova/
+- Медиаплан: https://help-ru.roistat.com/features/Analitika_i_otchety/Mediaplan/
+- Выгрузка данных: https://help-ru.roistat.com/features/Analitika_i_otchety/Vygruzka_informacii_iz_Roistat/
+- Выгрузка в Google Таблицы: https://help-ru.roistat.com/features/Analitika_i_otchety/Vygruzka_dannyh_iz_Roistat_v_Google_Tablitsy/
+- Глоссарий: https://help-ru.roistat.com/features/Analitika_i_otchety/Glossarii/
+
+## КОЛЛТРЕКИНГ
+- Введение: https://help-ru.roistat.com/features/Calltracking/Kolltreking/
+- Начало работы: https://help-ru.roistat.com/features/Calltracking/Nachalo_raboty_s_Kolltrekingom/
+- Базовый сценарий: https://help-ru.roistat.com/features/Calltracking/Scenarii/
+- Динамический: https://help-ru.roistat.com/features/Calltracking/Rasshirennye_nastroiki_scenarija/Dinamicheskii_kolltreking/
+- Статический: https://help-ru.roistat.com/features/Calltracking/Rasshirennye_nastroiki_scenarija/Staticheskii_kolltreking/
+- Переадресация (выбор типа): https://help-ru.roistat.com/features/Calltracking/Pereadresacija/Vybor_tipa_nomera_dlja_pereadresacii/
+- Переадресация на телефон: https://help-ru.roistat.com/features/Calltracking/Pereadresacija/Pereadresacija_na_obychnyi_telefon/
+- Переадресация SIP: https://help-ru.roistat.com/features/Calltracking/Pereadresacija/Pereadresacija_na_storonnjuju_uchetnuju_zapis_SIP/
+- Переадресация SIP Roistat: https://help-ru.roistat.com/features/Calltracking/Pereadresacija/Pereadresacija_zvonkov_na_uchetnuju_zapis_SIP_Roistat/
+- Переадресация ВАТС: https://help-ru.roistat.com/features/Calltracking/Pereadresacija/Ispolzovanije_v_VATS/
+- Webhook при звонке: https://help-ru.roistat.com/features/Calltracking/Rasshirennye_nastroiki_scenarija/Webhook-uvedomlenie/
+- Цели в Google UA: https://help-ru.roistat.com/features/Calltracking/Rasshirennye_nastroiki_scenarija/Otpravka_celi_v_Google_Analytics/
+- События в GA4: https://help-ru.roistat.com/features/Calltracking/Rasshirennye_nastroiki_scenarija/Otpravka_sobytiya_v_Google_Analytics_4/
+- Звонки в Метрику: https://help-ru.roistat.com/features/Calltracking/Rasshirennye_nastroiki_scenarija/Otpravka_informacii_o_zvonkah_v_JAndeks.Metriku/
+- Информация в CRM: https://help-ru.roistat.com/features/Calltracking/Rasshirennye_nastroiki_scenarija/Otpravka_informacii_po_zvonku_v_CRM/
+- Номера общая: https://help-ru.roistat.com/features/Calltracking/nomera_calltracking/Nomera_dlja_calltracking/
+- Сколько номеров: https://help-ru.roistat.com/features/Calltracking/nomera_calltracking/Kak_opredelit_kolichestvo_nomerov_dlja_calltracking/
+- Подключить свои номера: https://help-ru.roistat.com/features/Calltracking/nomera_calltracking/Podkljuchenie_svoih_nomero_k_kolltrekingu_Roistat/Podkljuchenie_svoih_nomerov_k_Kolltrekingu_Roistat/
+- История звонков: https://help-ru.roistat.com/features/Calltracking/Istorija_zvonkov/
+- Теги звонков: https://help-ru.roistat.com/features/Calltracking/Tegirovanie_zvonkov/
+- Чёрный список: https://help-ru.roistat.com/features/Calltracking/CHernyi_spisok_kolltrekinga/
+- FAQ: https://help-ru.roistat.com/features/Calltracking/Voprosy_i_otvety/
+
+## ВИРТУАЛЬНАЯ АТС
+- Введение: https://help-ru.roistat.com/features/Virtualnaya_ATS/Vvedenie/
+- Операторы: https://help-ru.roistat.com/features/Virtualnaya_ATS/Operatory/
+- Сценарии: https://help-ru.roistat.com/features/Virtualnaya_ATS/Scenarii/
+- Номера: https://help-ru.roistat.com/features/Virtualnaya_ATS/Nomera/
+- Дашборд: https://help-ru.roistat.com/features/Virtualnaya_ATS/Dashbord/
+- Контроль присутствия: https://help-ru.roistat.com/features/Virtualnaya_ATS/Kontrol_prisutstviya/
+- Отчёты: https://help-ru.roistat.com/features/Virtualnaya_ATS/Otchety/
+- Пропущенные: https://help-ru.roistat.com/features/Virtualnaya_ATS/Propuschennye/
+- Подключение устройств: https://help-ru.roistat.com/features/Virtualnaya_ATS/Podklyuchenie_k_VATS/
+- Решение проблем: https://help-ru.roistat.com/features/Virtualnaya_ATS/Reshenie_problem/
+
+## ЛОВЕЦ ЛИДОВ
+- Введение: https://help-ru.roistat.com/features/Lovec_lidov/Lovec_lidov/
+- Настройка: https://help-ru.roistat.com/features/Lovec_lidov/nastroika_new/
+- JS API: https://help-ru.roistat.com/features/Lovec_lidov/Rashirennaya_nastroika/
+- Обратный звонок: https://help-ru.roistat.com/features/Lovec_lidov/Obratnii_zvonok/
+- Пойманные лиды: https://help-ru.roistat.com/features/Lovec_lidov/Poimannye_lidy/
+- Лиды в Telegram: https://help-ru.roistat.com/features/Lovec_lidov/otpravka_poimannih_lidov_v_telegram/
+- Лиды через Webhook: https://help-ru.roistat.com/features/Lovec_lidov/Otpravka_poimannih_lidov_s_pomoshiu_webhook/
+- Кто на сайте: https://help-ru.roistat.com/features/Lovec_lidov/Kto_na_saite/
+
+## РЕЧЕВАЯ АНАЛИТИКА
+- Введение: https://help-ru.roistat.com/features/Rechevaja_analitika/Rechevaja_analitika/
+- Настройки: https://help-ru.roistat.com/features/Rechevaja_analitika/Nastroiki_Rechevoj_analitiki/
+- Загрузка звонков: https://help-ru.roistat.com/features/Rechevaja_analitika/Zagruzka_zvonkov_v_rechevuu_analitiku/
+- AI-теги: https://help-ru.roistat.com/features/Rechevaja_analitika/AI_tags/
+- Словари: https://help-ru.roistat.com/features/Rechevaja_analitika/Slovari/
+- Чек-листы: https://help-ru.roistat.com/features/Rechevaja_analitika/Check-list/
+
+## АНАЛИТИКА ЧАТОВ
+- Введение: https://help-ru.roistat.com/features/Analitika_chatov/Analitika_chatov/
+- AI-теги: https://help-ru.roistat.com/features/Analitika_chatov/AI_tags_chaty/
+- Чек-листы: https://help-ru.roistat.com/features/Analitika_chatov/Check-listy/
+
+## ОНЛАЙН-ЧАТ И МЕССЕНДЖЕРЫ
+- Введение: https://help-ru.roistat.com/features/Online-chat/Ob_Online-chate/
+- Установка: https://help-ru.roistat.com/features/Online-chat/Ustanovka_Online_chata/
+- Telegram бот: https://help-ru.roistat.com/features/Online-chat/Nastrojka_kanala_Telegram/
+- WhatsApp: https://help-ru.roistat.com/features/Online-chat/Nastrojka_kanala_WhatsApp/
+- Авито: https://help-ru.roistat.com/features/Online-chat/Nastrojka_kanala_Avito/
+
+## ПРОЧИЕ ИНСТРУМЕНТЫ
+- Автоматизация маркетинга: https://help-ru.roistat.com/features/Avtomatizacija_marketinga/Avtomatizacija_marketinga/
+- Цепочки писем: https://help-ru.roistat.com/features/Avtomatizacija_marketinga/chains/
+- Email-трекинг: https://help-ru.roistat.com/features/Emeiltreking/
+- Когортный анализ: https://help-ru.roistat.com/features/Kogortnyi_analiz/
+- Радар: https://help-ru.roistat.com/features/Radar/
+- Управление клиентами: https://help-ru.roistat.com/features/Upravlenie_klientami/Ob_Upravlenii_klientami/
+- Email-рассылки: https://help-ru.roistat.com/features/Upravlenie_klientami/O_rassylkah/
+- SMS-таргетинг: https://help-ru.roistat.com/features/SMS-targeting/about/
+- А/Б-тесты: https://help-ru.roistat.com/features/Split-testirovanie/O_Split-testirovanii/
+- Управление ставками: https://help-ru.roistat.com/features/Upravlenie_stavkami/Ob_Upravlenii_stavkami/
+- Оптимизатор рекламы: https://help-ru.roistat.com/features/Optimizer/about/
+- Аудит рекламы: https://help-ru.roistat.com/features/Audit_reklamy/
+- Ассистент: https://help-ru.roistat.com/features/Assistent/
+- SEO-аудит: https://help-ru.roistat.com/features/SEO-audit/SEO-audit/
+- Медиаплан PRO: https://help-ru.roistat.com/features/Mediaplan_PRO/MediaplanPro/
+- Управление заявками без CRM: https://help-ru.roistat.com/features/Upravlenie_zayavkami/about/
+
+## ИНТЕГРАЦИИ — CRM
+- Введение: https://help-ru.roistat.com/integrations/CRM_i_CMS/Integracija_s_CRM_i_CMS/
+- amoCRM: https://help-ru.roistat.com/integrations/CRM_i_CMS/amoCRM/
+- Битрикс24 (лиды+сделки): https://help-ru.roistat.com/integrations/CRM_i_CMS/Bitriks24/Lidy_i_sdelki/
+- Битрикс24 (сделки): https://help-ru.roistat.com/integrations/CRM_i_CMS/Bitriks24/Sdelki/
+- Битрикс24 (коробка): https://help-ru.roistat.com/integrations/CRM_i_CMS/Bitriks24/Box/
+- Битрикс24 FAQ: https://help-ru.roistat.com/integrations/CRM_i_CMS/Bitriks24/Bitriks24._Voprosy_i_otvety/
+- 1С-Битрикс: https://help-ru.roistat.com/integrations/CRM_i_CMS/1C_Bitriks/
+- RetailCRM: https://help-ru.roistat.com/integrations/CRM_i_CMS/retailCRM/
+- HubSpot: https://help-ru.roistat.com/integrations/CRM_i_CMS/Hubspot/
+- Salesforce: https://help-ru.roistat.com/integrations/CRM_i_CMS/Salesforce/
+- Мегаплан: https://help-ru.roistat.com/integrations/CRM_i_CMS/Megaplan/
+- МойСклад: https://help-ru.roistat.com/integrations/CRM_i_CMS/MoiSklad/
+- GetCourse: https://help-ru.roistat.com/integrations/CRM_i_CMS/GetCourse/
+- Своя CRM: https://help-ru.roistat.com/integrations/CRM_i_CMS/Svoja_CRM/
+- Интеграция по API: https://help-ru.roistat.com/integrations/CRM_i_CMS/Prochee/Integracija_po_API/
+- Импорт из Excel: https://help-ru.roistat.com/integrations/CRM_i_CMS/Prochee/Import_sdelok_iz_Excel/
+- Смена CRM: https://help-ru.roistat.com/integrations/CRM_i_CMS/Smena_CRM/
+- Webhook заявок: https://help-ru.roistat.com/integrations/CRM_i_CMS/Webhook_dlja_otpravki_zajavok/
+- Сценарии отправки заявок: https://help-ru.roistat.com/integrations/Scenarii_otpravki_zayavok/
+- Передача заявок (проксилид): https://help-ru.roistat.com/integrations/CRM_i_CMS/Dopolnitel%E2%80%99nye_nastroiki_integracii/Peredacha_zajavok_v_CRM_cherez_Roistat_%28proksilid%29/
+- Проверка дублей: https://help-ru.roistat.com/integrations/CRM_i_CMS/Dopolnitel%E2%80%99nye_nastroiki_integracii/Proverka_postupajush%E2%80%99ih_zajavok_na_dubli/
+- Распределение статусов: https://help-ru.roistat.com/integrations/CRM_i_CMS/Dopolnitel%E2%80%99nye_nastroiki_integracii/Raspredelenie_statusov_sdelok/
+
+## ИНТЕГРАЦИИ — РЕКЛАМНЫЕ КАНАЛЫ
+- Разметка ссылок: https://help-ru.roistat.com/quick-start/Razmetka_ssylok/
+- Яндекс.Директ: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/JAndeks_Direkt/
+- Яндекс.Метрика: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Prochee/Integracija_s_JAndek.Metrikoi/
+- Яндекс.Маркет: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/JAndeks_Market/
+- Яндекс Бизнес: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Yandex_Business/
+- Google Ads: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Google_Adwords/
+- Google Analytics 4: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Google_Analytics_4/
+- Facebook: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Facebook/
+- VK Реклама: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/VK_Ads/
+- ВКонтакте: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/VKontakte/
+- myTarget: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/myTarget/
+- TikTok: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/tiktok/
+- Авито: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Avito/
+- Wildberries: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Wildberries/
+- Ozon: https://help-ru.roistat.com/integrations/Podkljuchenie_reklamnyh_kanalov/Ozon/
+
+## ИНТЕГРАЦИИ — ПРОЧИЕ СЕРВИСЫ
+- Tilda: https://help-ru.roistat.com/integrations/Konstruktory_saitov_i_form/Tilda/
+- Wix: https://help-ru.roistat.com/integrations/Konstruktory_saitov_i_form/Konstruktor_saitov_wix/
+- WordPress WooCommerce: https://help-ru.roistat.com/integrations/CRM_i_CMS/Prochee/WordPress_%28WooCommerce%29/
+- WordPress Elementor: https://help-ru.roistat.com/integrations/Konstruktory_saitov_i_form/wordpress_elementor/
+- Telegram: https://help-ru.roistat.com/integrations/Telegram/
+- WhatsApp: https://help-ru.roistat.com/integrations/WhatsApp/
+- Wazzup: https://help-ru.roistat.com/integrations/Wazzup/
+- JivoSite: https://help-ru.roistat.com/integrations/Onlain-chaty/JivoSite/
+- Slack: https://help-ru.roistat.com/integrations/Slack/
+- Webhook: https://help-ru.roistat.com/integrations/Webhook/
+- Zapier: https://help-ru.roistat.com/integrations/Konstruktory_saitov_i_form/Zapier/
+- Mango Office коллтрекинг: https://help-ru.roistat.com/integrations/Servisy_kolltrekinga/Mango%20Office/
+- Calltouch: https://help-ru.roistat.com/integrations/Servisy_kolltrekinga/Calltouch/
+- UIS: https://help-ru.roistat.com/integrations/Servisy_kolltrekinga/UIS/
+
+## НАСТРОЙКИ
+- Баланс и тариф: https://help-ru.roistat.com/settings/Nastroiki_akkaunta/Oplata_uslug/Billing/
+- Агентский биллинг: https://help-ru.roistat.com/settings/Nastroiki_akkaunta/Oplata_uslug/Agents-billing/
+- Заморозка: https://help-ru.roistat.com/settings/Nastroiki_akkaunta/Oplata_uslug/Zamorozka/
+- Реферальная программа: https://help-ru.roistat.com/settings/Nastroiki_akkaunta/Referalnaja_programma_Roistat/
+- Двухфакторная авторизация: https://help-ru.roistat.com/settings/Nastroiki_akkaunta/two_factor_authentication/
+- Установка счётчика: https://help-ru.roistat.com/settings/Nastroiki_proekta/Ustanovka_schetchika/Ustanovka_schetchika/
+- Права доступа: https://help-ru.roistat.com/settings/Nastroiki_proekta/Prava_dostupa/
+- Диагностика: https://help-ru.roistat.com/settings/Nastroiki_proekta/Diagnostika_neispravnostei/
+- Состояние проекта: https://help-ru.roistat.com/settings/Nastroiki_proekta/Sostojanie_proekta/
+- Перенос проекта: https://help-ru.roistat.com/settings/Nastroiki_proekta/Perenos_proekta/
+- Удаление данных: https://help-ru.roistat.com/settings/Nastroiki_proekta/Udalenie_dannih/
+
+## REST API
+- Введение: https://help-ru.roistat.com/API/methods/about/
+- Авторизация: https://help-ru.roistat.com/API/methods/authorization/
+- Аналитика: https://help-ru.roistat.com/API/methods/analytics/
+- Визиты: https://help-ru.roistat.com/API/methods/visit/
+- Сделки: https://help-ru.roistat.com/API/methods/orders/
+- Коллтрекинг: https://help-ru.roistat.com/API/methods/calltracking/
+- Клиенты: https://help-ru.roistat.com/API/methods/clients/
+- Рекламные каналы: https://help-ru.roistat.com/API/methods/channels/
+- События: https://help-ru.roistat.com/API/methods/events/
+- Статистика: https://help-ru.roistat.com/API/methods/statystics/
+- Ловец лидов: https://help-ru.roistat.com/API/methods/lead-hunter/
+- Речевая аналитика: https://help-ru.roistat.com/API/methods/speech/
+- Проекты: https://help-ru.roistat.com/API/methods/projects/
+- Менеджеры: https://help-ru.roistat.com/API/methods/managers/
+- Баланс API: https://help-ru.roistat.com/API/methods/billing/
+
+## JS SDK
+- Общая информация: https://help-ru.roistat.com/API/js_sdk/about/
+- Колбэк-функции: https://help-ru.roistat.com/API/js_sdk/callbacks/
+- Визиты SDK: https://help-ru.roistat.com/API/js_sdk/visits/
+- Коллтрекинг SDK: https://help-ru.roistat.com/API/js_sdk/calltracking/
+- Ловец лидов SDK: https://help-ru.roistat.com/API/js_sdk/lead_hunter/
+- Клиенты SDK: https://help-ru.roistat.com/API/js_sdk/clients/
+- События SDK: https://help-ru.roistat.com/API/js_sdk/events/
+- Онлайн-чат SDK: https://help-ru.roistat.com/API/js_sdk/online_chat/
+
+## РАЗРАБОТЧИКАМ СЕРВИСОВ
+- Размещение в каталоге: https://help-ru.roistat.com/API/Razmeshenie_v_kataloge_integracii_Roistat/
+- Интеграция сервисов: https://help-ru.roistat.com/API/Integracija_drugih_servisov/
+- Интеграции CRM-систем: https://help-ru.roistat.com/API/Integracija_CRM_sistem/
+`;
+
+const SYSTEM = `Ты — внутренний ИИ-ассистент компании Roistat для сотрудников (саппорт, sales, CS, разработчики, аккаунт-менеджеры). Отвечай на русском языке — профессионально, чётко, по делу.
+
+ПРИНЦИПЫ:
+1. Краткое резюме → затем шаги / детали.
+2. Используй markdown: **жирный**, списки, \`код\`, ### заголовки.
+3. В конце ответа ВСЕГДА добавляй раздел "📚 Документация:" с маркированным списком релевантных ссылок в формате [Название](URL).
+4. Для клиентских вопросов ("клиент спрашивает...") давай ответ в двух частях: краткое объяснение для сотрудника, потом блок "**Готовый ответ клиенту:**" который можно скопировать.
+5. Если вопрос вне документации — честно скажи и направь к поддержке: https://help-ru.roistat.com/quick-start/Podderzhka/Obrashenie_v_sluzhbu_podderzhki/
+
+Полная карта документации help-ru.roistat.com:
+${DOCS_MAP}`;
+
+const QUICK_CATS = [
+  {icon:'📊',t:'Сквозная аналитика',d:'Отчёты, дашборды, атрибуция',q:'Как настроить сквозную аналитику в Roistat с нуля? Дай пошаговый план'},
+  {icon:'📞',t:'Коллтрекинг',d:'Номера, сценарии, переадресация',q:'Как работает динамический коллтрекинг и сколько номеров нужно?'},
+  {icon:'🔌',t:'Интеграции CRM',d:'amoCRM, Битрикс24, RetailCRM',q:'Перечисли все доступные интеграции с CRM и объясни разницу'},
+  {icon:'⚙️',t:'REST API',d:'Методы, авторизация, примеры',q:'Как авторизоваться в REST API Roistat и какие методы есть для работы со сделками?'},
+  {icon:'🎯',t:'Ловец лидов',d:'Виджет, триггеры, лиды',q:'Как настроить Ловца лидов: виджет появляется при попытке уйти со страницы'},
+  {icon:'💳',t:'Тариф и биллинг',d:'Оплата, заморозка, агентский',q:'Объясни как работает агентский биллинг Roistat — для чего он и как подключить'},
+];
+
+let chats = JSON.parse(localStorage.getItem('roistat_chats') || '{}');
+let activeId = null;
+let loading = false;
+
+function saveChats() {
+  try { localStorage.setItem('roistat_chats', JSON.stringify(chats)); } catch(e) {}
+}
+
+function md(txt) {
+  let h = txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  h = h.replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>');
+  h = h.replace(/`([^`]+)`/g,'<code>$1</code>');
+  h = h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  h = h.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  const lines = h.split('\n');
+  const out = []; let ul=false,ol=false;
+  for(const l of lines){
+    const um=l.match(/^[-•*]\s+(.+)$/),om=l.match(/^\d+\.\s+(.+)$/);
+    if(um){if(!ul){out.push('<ul>');ul=true;}if(ol){out.push('</ol>');ol=false;}out.push('<li>'+um[1]+'</li>');}
+    else if(om){if(!ol){out.push('<ol>');ol=true;}if(ul){out.push('</ul>');ul=false;}out.push('<li>'+om[1]+'</li>');}
+    else{if(ul){out.push('</ul>');ul=false;}if(ol){out.push('</ol>');ol=false;}if(l.trim())out.push('<p>'+l+'</p>');}
+  }
+  if(ul)out.push('</ul>');if(ol)out.push('</ol>');
+  return out.join('');
+}
+
+function renderHist() {
+  const el = document.getElementById('hist');
+  const items = Object.values(chats).sort((a,b)=>b.ts-a.ts);
+  if(!items.length){el.innerHTML='<div class="hist-empty">Здесь появятся диалоги</div>';return;}
+  el.innerHTML = items.map(c=>`
+    <div class="hist-item${c.id===activeId?' active':''}" onclick="loadChat('${c.id}')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>${c.title}</span>
+    </div>`).join('');
+}
+
+function renderMessages() {
+  const cur = activeId ? chats[activeId] : null;
+  const msgs = cur ? cur.messages : [];
+  document.getElementById('welcome-screen').style.display = msgs.length ? 'none' : 'block';
+  document.getElementById('messages-list').innerHTML = msgs.map(m=>`
+    <div class="msg">
+      <div class="av ${m.r==='user'?'user':'bot'}">${m.r==='user'?'Я':'R'}</div>
+      <div class="msg-body">
+        <div class="msg-who">${m.r==='user'?'Вы':'Roistat AI'}</div>
+        <div class="msg-text">${md(m.c)}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('typing-indicator').style.display = loading ? 'block' : 'none';
+  document.getElementById('chat-title').textContent = cur ? cur.title : 'Новый диалог';
+  const msgsEl = document.getElementById('msgs');
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function newChat(){ activeId=null; renderMessages(); renderHist(); }
+function loadChat(id){ activeId=id; renderMessages(); renderHist(); }
+
+async function sendMsg(text) {
+  if(!text||!text.trim()||loading)return;
+  loading=true;
+  document.getElementById('send-btn').disabled=true;
+
+  let id = activeId;
+  let msgs = [];
+  if(!id){
+    id='c'+Date.now();
+    chats[id]={id,title:text.length>42?text.slice(0,42)+'…':text,ts:Date.now(),messages:[]};
+    activeId=id;
+  }
+  msgs=[...chats[id].messages,{r:'user',c:text}];
+  chats[id].messages=msgs;
+  renderMessages();renderHist();
+
+  try{
+    const res = await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({system:SYSTEM,messages:msgs.map(m=>({role:m.r,content:m.c}))})
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const reply = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    chats[id].messages=[...msgs,{r:'assistant',c:reply}];
+  }catch(e){
+    chats[id].messages=[...msgs,{r:'assistant',c:'⚠️ **Ошибка:** '+e.message}];
+  }finally{
+    loading=false;
+    document.getElementById('send-btn').disabled=false;
+    saveChats();
+    renderMessages();renderHist();
+  }
+}
+
+function sendFromInput(){
+  const inp=document.getElementById('inp');
+  const val=inp.value.trim();
+  if(!val)return;
+  inp.value='';inp.style.height='auto';
+  sendMsg(val);
+}
+
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendFromInput();}}
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,180)+'px';}
+
+document.getElementById('cats').innerHTML=QUICK_CATS.map(c=>`
+  <button class="cat" onclick="sendMsg(${JSON.stringify(c.q)})">
+    <span class="cat-icon">${c.icon}</span>
+    <div class="cat-t">${c.t}</div>
+    <div class="cat-d">${c.d}</div>
+  </button>`).join('');
+
+renderMessages();renderHist();
+</script>
+</body>
+</html>
